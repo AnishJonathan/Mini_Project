@@ -1,7 +1,9 @@
 from flask import Blueprint, request, render_template, abort, session, redirect, url_for,jsonify
-from app import mysql,app_root
+import os
+app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from db_mock import MySQL
+mysql = MySQL()
 from werkzeug.utils import secure_filename
-import MySQLdb.cursors
 from datetime import date
 import datetime
 import json,pytz,requests, base64, math, random, os, shutil
@@ -15,7 +17,7 @@ IST = pytz.timezone('Asia/Kolkata')
 @login_required
 def student_quiz():
     # if session.get("quiz_id") is not None:
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT \
         det.quiz_started,det.quiz_id,det.q_title,det.q_sub,det.q_date,det.q_time_start,det.q_time_end,det.show_answer,det.quiz_type,ques.total_question\
          FROM \
@@ -33,7 +35,7 @@ def student_quiz():
     print("quiz_det",quiz_det)
     cur.close()
     if quiz_det:
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT switch_limit FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])
         temp = cur.fetchone()
         cur.close()
@@ -51,7 +53,7 @@ def student_quiz():
         st=datetime.datetime.strptime(quiz_det['q_time_start'],'%H:%M').time()
         end=datetime.datetime.strptime(quiz_det['q_time_end'],'%H:%M').time()
         t_time=datetime.datetime.strptime(today_time,'%H:%M').time()
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT quiz_attempted FROM score WHERE quiz_id = %s AND user=%s",(session['quiz_id'],session['svv']))
         rec = cur.fetchone()
         if dt1 < db_date or (dt1 == db_date and t_time<st and quiz_det['quiz_started']==0) and not rec:
@@ -66,12 +68,12 @@ def student_quiz():
         elif dt1 == db_date and quiz_det['quiz_started']==1:
             print("IF4")
             print(session)
-            cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT quiz_attempted FROM score WHERE quiz_id = %s AND user=%s",(session['quiz_id'],session['svv']))
             rec = cur.fetchone()
             print("rec",rec)
             cur.close()
-            cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT ques_type,selected_opt,one_line_ans,desc_ans_name,ques_id FROM quiz_responses WHERE quiz_id = %s AND user_inserted = %s",(session['quiz_id'],session['svv']))
             user_attempt_ques = cur.fetchone()
             print("user_attempt_ques",user_attempt_ques)
@@ -80,7 +82,7 @@ def student_quiz():
                 if session.get('submitted_ques') is None or session.get('q_nos') is None:
                     if user_attempt_ques is None:
                         session['quiz_start'] = datetime.datetime.now(IST).strftime('%H:%M:%S')   
-                    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                    cur = mysql.connection.cursor()
                     cur.execute("SELECT * FROM questions WHERE quiz_id = %s",[session['quiz_id']])
                     records = cur.fetchall()
                     cur.close()
@@ -122,7 +124,7 @@ def student_quiz():
                         if user_attempt_ques['desc_ans_name']:
                             desc_ans_name_st = user_attempt_ques['desc_ans_name'].split(',')
                         
-                        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                        cur = mysql.connection.cursor()
                         cur.execute("SELECT * FROM questions WHERE quiz_id = %s AND q_id = %s",(session['quiz_id'],int(questions_attempted[0])))
                         records_pr = cur.fetchone()
                         cur.close()
@@ -159,7 +161,7 @@ def student_quiz():
                     session['total_ques'] = len(records)
                     session['q_nos'] = question_nos
                     session['current_ques'] = question_nos[0]
-                    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                    cur = mysql.connection.cursor()
                     cur.execute("SELECT q_timer,q_time_division,q_time_end FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])
                     records2 = cur.fetchone()
                     cur.close()
@@ -219,7 +221,7 @@ def student_quiz():
                 elif session.get('submitted_ques') > 0 and session.get('submitted_ques') < session.get('total_ques'):
                     # #
                     question_for_no = session['q_nos']
-                    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                    cur = mysql.connection.cursor()
                     cur.execute("SELECT * FROM questions WHERE quiz_id = %s AND q_id = %s",(session['quiz_id'],question_for_no[session['submitted_ques']]))
                     records = cur.fetchone()
                     time = ""
@@ -280,7 +282,7 @@ def student_quiz():
                     return render_template('quiz.html',message="",questions=records,ques_no=question_number+1,total=0,time_per_ques=time,attempted=0)
                 elif session.get('submitted_ques')==0 :
                     question_for_no = session['q_nos']
-                    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                    cur = mysql.connection.cursor()
                     cur.execute("SELECT * FROM questions WHERE quiz_id = %s AND q_id = %s",(session['quiz_id'],question_for_no[0]))
                     records = cur.fetchone()
                     time = ""
@@ -306,7 +308,7 @@ def student_quiz():
 def question_submit_mode():
     if request.method == "POST" or request.method == "GET" :
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         quiz_id = session["quiz_id"]
         cursor.execute("select quiz_started from quiz_det where quiz_id = %s",[quiz_id])
         end = cursor.fetchone()["quiz_started"]
@@ -355,7 +357,7 @@ def question_submit_mode():
             ques_id = session['current_ques']
             #way is for from where this function is called 1- After Submitting or Updating
             way = 1
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT ques_type,selected_opt,one_line_ans,desc_ans_name,ques_id FROM quiz_responses WHERE quiz_id = %s AND user_inserted = %s",(session['quiz_id'],session['svv']))
         user_submit_ques = cur.fetchone()
         user_attempt_ques = user_submit_ques
@@ -487,7 +489,7 @@ def question_submit_mode():
             current_ques_index -= 1
 
         
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM questions WHERE quiz_id = %s AND q_id = %s",(session['quiz_id'],session['current_ques']))
         records = cur.fetchone()
         if prev_attempt == 1:
@@ -604,7 +606,7 @@ def question_submit():
                 desc_ans_file = request.form['desc_name'][session['current_ques']]
                 print('submit,' ,desc_ans_file,desc_ans_name)
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT ques_id FROM quiz_responses WHERE quiz_id = %s AND user_inserted = %s",(session['quiz_id'],session['svv']))
         user_attempt_ques = cur.fetchone()
         cur.close()
@@ -617,7 +619,7 @@ def question_submit():
                 end_time = datetime.datetime.now(IST).strftime("%H:%M:%S")
                 start_time = session['quiz_start']
             else:
-                cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cur = mysql.connection.cursor()
                 cur.execute("SELECT q_time_start FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])
                 rec = cur.fetchone()
                 cur.close()
@@ -630,7 +632,7 @@ def question_submit():
                 minutes, seconds = divmod(remainder, 60)
                 start_time = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
                 
-            cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cur = mysql.connection.cursor()
             if ans_type==0:
                 cur.execute("INSERT INTO quiz_responses (selected_opt,user_inserted,ques_id,ques_type,quiz_id,time_per_ques,quiz_start) VALUES (%s,%s,%s,%s,%s,%s,%s)",(opt_select,session['svv'],ques_id,ans_type,session['quiz_id'],end_time,start_time))    
             elif ans_type==1:
@@ -638,7 +640,7 @@ def question_submit():
             elif ans_type == 2:
                 cur.execute("INSERT INTO quiz_responses (desc_ans_name,desc_ans_file,user_inserted,ques_id,ques_type,quiz_id,time_per_ques,quiz_start) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(desc_ans_name,desc_ans_file,session['svv'],ques_id,ans_type,session['quiz_id'],end_time,start_time))
         elif user_attempt_ques > 0:
-            cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT selected_opt,one_line_ans,desc_ans_name,desc_ans_file,ques_type,ques_id,time_per_ques FROM quiz_responses WHERE quiz_id = %s AND user_inserted=%s",(session['quiz_id'],session['svv']))
             record = cur.fetchone()
             cur.close()
@@ -651,7 +653,7 @@ def question_submit():
                 updt_ques_type = str(record['ques_type'])+','+str(ans_type)
                 end_time = datetime.datetime.now(IST).strftime("%H:%M:%S")
                 end_time = record['time_per_ques']+','+end_time
-                cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cur = mysql.connection.cursor()
                 if ans_type==0:
                     if record['selected_opt'] is not None:
                         updt_opt = record['selected_opt']+','+opt_select
@@ -763,7 +765,7 @@ def question_submit():
                 now_time = datetime.datetime.now(IST).strftime("%H:%M:%S")
                 end_time = ','.join(end_time)
                 end_time += ','+now_time
-                cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cur = mysql.connection.cursor()
                 if ans_type==0:
                     cur.execute("UPDATE quiz_responses SET selected_opt = %s , ques_type = %s , ques_id = %s , time_per_ques = %s  WHERE quiz_id = %s AND user_inserted=%s" ,(updt_mcq,updt_ques_type,updt_ques_id,end_time,session['quiz_id'],session['svv']))
                 elif ans_type==1:                
@@ -828,25 +830,25 @@ def view_questions():
         session['over_access'] = 1
         return redirect(url_for('dashboard'))
     elif mode=="Student":
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT user_score,ques_points FROM score WHERE user = %s AND quiz_id = %s AND pending_chk = 0",(session['svv'],session['quiz_id']))
         student = cur.fetchone()
         cur.close()
         # #
         ques_points = student['ques_points'].split(",")
         total_score = {}
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
         total_pts = cursor.fetchone()
         total_score['total_points'] = int(total_pts['total_points'])
         total_score['score'] = student['user_score']
         # total_score['total_points'] = student['total_points']
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT selected_opt,ques_id,ques_type,one_line_ans,desc_ans_name FROM quiz_responses WHERE quiz_id = %s AND user_inserted = %s",(session['quiz_id'],session['svv']))
         quiz_response = cur.fetchone()
         cur.close()
         if quiz_response:
-            cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT * FROM questions WHERE quiz_id = %s",[session['quiz_id']])
             records = cur.fetchall()
             cur.close()
@@ -935,7 +937,7 @@ def view_questions():
             return render_template('check_ques_score.html',msg = "",ques=op,len = len(op), score=total_score,attempted=1)
         else:
             option_select = list()
-            cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT ans_type,opt1,opt2,opt3,opt4,q_id,question AS ques,correct_opt,points FROM questions WHERE quiz_id = %s",[session['quiz_id']])
             records = cur.fetchall()
             questions = list()
@@ -954,11 +956,11 @@ def view_questions():
 @login_required
 def finish_quiz():
     # #
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT selected_opt,ques_id,ques_type,quiz_start,time_per_ques,q_time_start FROM quiz_responses,quiz_det WHERE quiz_responses.quiz_id = %s AND quiz_responses.quiz_id = quiz_det.quiz_id AND user_inserted=%s",(session['quiz_id'],session['svv']))
     record_user = cur.fetchone()
     cur.close()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT ans_type FROM questions WHERE quiz_id = %s",[session['quiz_id']])
     question_ans_type = cur.fetchall()
     cur.close()
@@ -972,7 +974,7 @@ def finish_quiz():
         time_per_ques = []
         now = datetime.datetime.now(IST)
         quiz_end_time = now.strftime('%H:%M:%S')
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         # cur.execute("SELECT selected_opt,ques_id,ques_type,quiz_start,time_per_ques FROM quiz_responses WHERE quiz_id = %s AND user_inserted=%s",(session['quiz_id'],session['svv']))
         # record_user = cur.fetchone()
         # user_quiz_start = record_user['q_time_start']+':00'
@@ -1010,11 +1012,11 @@ def finish_quiz():
         pass 
     
     #
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT correct_opt,q_id,points FROM questions WHERE quiz_id = %s AND correct_opt !='-' OR correct_opt != NULL",[session['quiz_id']])
     record_og = cur.fetchall()
     cur.close()
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
     total_pts = cursor.fetchone()
     total_pts['total_points'] = int(total_pts['total_points'])
@@ -1091,11 +1093,11 @@ def finish_quiz():
             username = session['username']
             roll = session['roll']
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("INSERT INTO score (time_submitted,user,user_score,ques_points,total_points,quiz_id,quiz_attempted,pending_chk,total_time_taken,stud_img,username,roll) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(quiz_end_time,session['svv'],count,score_list,total_pts['total_points'],session['quiz_id'],1,pending,ttl_time_taken,user_img,username,roll))
         mysql.connection.commit()
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE quiz_responses SET time_per_ques = %s WHERE quiz_id = %s AND user_inserted=%s" ,(diff_time_str,session['quiz_id'],session['svv']))
         mysql.connection.commit()
 
@@ -1119,11 +1121,11 @@ def finish_quiz():
             roll = session['roll']
 
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("INSERT INTO score (time_submitted,user,user_score,ques_points,total_points,quiz_id,quiz_attempted,pending_chk,total_time_taken,stud_img,username,roll) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(quiz_end_time,session['svv'],count,score_list,total_pts['total_points'],session['quiz_id'],1,pending,ttl_time_taken,user_img,username,roll))
         mysql.connection.commit()
         diff_time_str = "00:00:00"
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE quiz_responses SET time_per_ques = %s WHERE quiz_id = %s AND user_inserted=%s" ,(diff_time_str,session['quiz_id'],session['svv']))
         mysql.connection.commit()
         if pending==0:
@@ -1139,11 +1141,11 @@ def finish_quiz():
 @student.route('/quiz_score/',methods=['POST', 'GET'])
 @login_required
 def score_quiz():
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT quiz_attempted,user_score,total_points,show_answer,pending_chk FROM score,quiz_det WHERE score.quiz_id = %s AND score.user = %s AND quiz_det.quiz_id = %s",(session['quiz_id'],session['svv'],session['quiz_id']))
     rec = cur.fetchone()
     cur.close()
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
     total_pts = cursor.fetchone()
     total_points = int(total_pts['total_points'])
@@ -1186,7 +1188,7 @@ def electives_change():
     stud_id = request.form['student_id']
     selected_elect = request.form['elective_choice']
     if stud_id != None and selected_elect != None:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT electives FROM student WHERE S_id = %s AND dept = %s",(stud_id,session['dept']))
         selected_electives = cursor.fetchone()
         print(selected_electives)
@@ -1223,7 +1225,7 @@ def quiz_show():
     if session['mode'] == "Student" and (session['sem'] == 8 or session['sem'] == 7):
         quiz_id = request.args.get('id')
         print("quiz_id",quiz_id)
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM questions WHERE quiz_id = %s ORDER BY q_no ASC",[quiz_id])
         records = cur.fetchall()
         if cur.rowcount == 0:

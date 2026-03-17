@@ -1,8 +1,7 @@
 <nav class="navbar default-layout-navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
             <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center" style="border-right: 1px solid #F8F8F8;">
-                <a class="navbar-brand brand-logo" href="{{url_for('dashboard')}}"><img src="{{ url_for('static', filename='images/logo_2_sm.png') }}" style="width: 80%;height: 100%;" alt="logo" /></a>
-                <a class="navbar-brand brand-logo-mini" href="{{url_for('dashboard')}}"><img src="{{ url_for('static', filename='images/logo_sm.svg') }}" style="width: 60%;
-height: 60%;"  alt="logo" /></a>
+                <a class="navbar-brand brand-logo" href="{{url_for('dashboard')}}" style="font-weight: bold; font-size: 1.5rem; color: #333;">Testwise</a>
+                <a class="navbar-brand brand-logo-mini" href="{{url_for('dashboard')}}" style="font-weight: bold; font-size: 1.2rem; color: #333;">Testwise</a>
             </div>
             <div class="navbar-menu-wrapper d-flex align-items-stretch">
                 <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
@@ -20,54 +19,7 @@ height: 60%;"  alt="logo" /></a>
                 </div> -->
                 <ul class="navbar-nav navbar-nav-right">
 
-                    <!-- <li class="nav-item dropdown">
-                        <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" href="{{url_for('load')}}#" data-toggle="dropdown">
-                            <i class="mdi mdi-bell-outline"></i>
-                            <span class="count-symbol bg-danger"></span>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="notificationDropdown">
-                            <h6 class="p-3 mb-0">Notifications</h6>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item preview-item">
-                                <div class="preview-thumbnail">
-                                    <div class="preview-icon bg-success">
-                                        <i class="mdi mdi-calendar"></i>
-                                    </div>
-                                </div>
-                                <div class="preview-item-content d-flex align-items-start flex-column justify-content-center">
-                                    <h6 class="preview-subject font-weight-normal mb-1">Event today</h6>
-                                    <p class="text-gray ellipsis mb-0"> Just a reminder that you have an event today </p>
-                                </div>
-                                No notifications!
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item preview-item">
-                                <div class="preview-thumbnail">
-                                    <div class="preview-icon bg-warning">
-                                        <i class="mdi mdi-settings"></i>
-                                    </div>
-                                </div>
-                                <div class="preview-item-content d-flex align-items-start flex-column justify-content-center">
-                                    <h6 class="preview-subject font-weight-normal mb-1">Settings</h6>
-                                    <p class="text-gray ellipsis mb-0"> Update dashboard </p>
-                                </div>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item preview-item">
-                                <div class="preview-thumbnail">
-                                    <div class="preview-icon bg-info">
-                                        <i class="mdi mdi-link-variant"></i>
-                                    </div>
-                                </div>
-                                <div class="preview-item-content d-flex align-items-start flex-column justify-content-center">
-                                    <h6 class="preview-subject font-weight-normal mb-1">Launch Admin</h6>
-                                    <p class="text-gray ellipsis mb-0"> New admin wow! </p>
-                                </div>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <h6 class="p-3 mb-0 text-center">See all notifications</h6>
-                        </div>
-                    </li> -->
+
                     <li class="nav-item nav-profile dropdown">
                         <a class="nav-link dropdown-toggle" id="profileDropdown" href="{{url_for('load')}}" data-toggle="dropdown" aria-expanded="false">
                             <div class="nav-profile-img">

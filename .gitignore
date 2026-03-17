@@ -1,2 +1,9 @@
+.env
+*.db
+__pycache__/
+*.pyc
 /testwise
 /quiz_env
+/quiz-env
+.vscode/
+.idea/

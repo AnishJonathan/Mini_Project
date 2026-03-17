@@ -1,12 +1,14 @@
 from flask import Blueprint, request, render_template, abort, session, redirect, url_for
-from app import mysql,app_root
+import os
+app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from db_mock import MySQL
+mysql = MySQL()
 from werkzeug.utils import secure_filename
-import MySQLdb.cursors
 from datetime import date
 import datetime
 import json,pytz,requests, base64, math,os
 from check_login import login_required, check_message, hash_password, check_password
-from app import page_not_found
+# Imports resolved
 from pathlib import Path
 import xlrd, xlwt, openpyxl
 # from openpyxl_image_loader import SheetImageLoader
@@ -23,28 +25,28 @@ def get_master_mode():
     mode = request.args.get('mode')
     if mode=="Student":
         qs = []
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(S_id) as Total_Stud FROM student where current_sem=1 OR current_sem=2')
         fy_students = cursor.fetchone()
         fy = {}
         fy['batch'] = 'First-Year'
         fy['Total_Stud'] = fy_students['Total_Stud']
         qs.append(fy)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(S_id) as Total_Stud FROM student where current_sem=3 OR current_sem=4')
         sy_students = cursor.fetchone()
         sy = {}
         sy['batch'] = 'Second-Year'
         sy['Total_Stud'] = sy_students['Total_Stud']
         qs.append(sy)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(S_id) as Total_Stud FROM student where current_sem=5 OR current_sem=6')
         ty_students = cursor.fetchone()
         ty = {}
         ty['batch'] = 'Third-Year'
         ty['Total_Stud'] = ty_students['Total_Stud']
         qs.append(ty)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(S_id) as Total_Stud FROM student where current_sem=7 OR current_sem=8')
         ly_students = cursor.fetchone()
         ly = {}
@@ -60,7 +62,7 @@ def get_master_mode():
         colors = ['bg-gradient-primary2','bg-gradient-success','bg-gradient-info','bg-gradient-warning','bg-gradient-danger','bg-gradient-dark']
         return render_template('student/student_types.html', stud = qs, color=colors)
     elif mode=="Faculty":
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         if session.get('data_master_mode') is None:
             session['data_master_mode'] = "faculty"
         else:
@@ -70,7 +72,7 @@ def get_master_mode():
         cursor.execute('SELECT dept_name FROM department where dept_short = %s',[session['dept']])
         department = cursor.fetchone()
         dept = department['dept_name']
-        cursor.execute('SELECT F_id, Designation, L_name, F_name, M_name, F_email, F_num, gender FROM faculty where dept = %s',[dept])
+        cursor.execute('SELECT F_id, "" as Designation, L_name, F_name, M_name, F_email, F_num, gender FROM faculty where dept = %s',[dept])
         faculty = cursor.fetchall()
         cursor.close()
         msg = check_message()
@@ -78,14 +80,18 @@ def get_master_mode():
     elif mode=="Subject":
         qs = []
         print(session['dept'])
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         for sem_num in range(1,9):
             db_sem = "sem"+str(sem_num)
             cursor.execute('SELECT COUNT(subject.course_code) as Total_comp_Sub FROM subject INNER JOIN department ON department.dept_id=subject.dept_id AND department.dept_short=%s AND subject.sem=%s',(session['dept'],db_sem))
             sem_com_subjects = cursor.fetchone()
             print(sem_com_subjects)
-            cursor.execute('SELECT COUNT(electives.course_code) as Total_elect_Sub FROM electives INNER JOIN department ON department.dept_id=electives.dept_id AND department.dept_short=%s AND electives.sem=%s',(session['dept'],db_sem))
-            sem_elect_subjects = cursor.fetchone()
+            sem_elect_subjects = {'Total_elect_Sub': 0}
+            try:
+                cursor.execute('SELECT COUNT(electives.course_code) as Total_elect_Sub FROM electives INNER JOIN department ON department.dept_id=electives.dept_id AND department.dept_short=%s AND electives.sem=%s',(session['dept'],db_sem))
+                sem_elect_subjects = cursor.fetchone()
+            except Exception:
+                pass
             print(sem_elect_subjects)
             sem = {}
             sem['batch'] = 'Semester-'+str(sem_num)
@@ -102,7 +108,7 @@ def get_master_mode():
     elif mode=="Electives":
         qs = []
         print(session['dept'])
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         for sem_num in range(1,9):
             db_sem = "sem"+str(sem_num)
             cursor.execute('SELECT COUNT(electives.course_code) as Total_Sub FROM electives \
@@ -129,7 +135,7 @@ def check_record_entry():
     # #print(session)
     data_edit_mode = request.form['data_edit_mode']
     print("check_record_present")
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     res = {}
     if data_edit_mode == "student":
         email = request.form['mail']
@@ -277,7 +283,7 @@ def upload_excel_add_records():
                 if excel_sheet_names[i].lower() == data_master_mode.lower():
                     load_sheet_name = excel_sheet_names[i]
             sheet = excel_sheet.sheet_by_name(load_sheet_name)
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             sheet_create = 0
             row_insrt = 0
             category_correct = 0
@@ -559,7 +565,7 @@ def upload_excel_export_records():
             if mode != "" :
                 workbook =xlsxwriter.Workbook(os.path.join(download_directory,dept+'_'+data_master_mode+'_'+mode+'_master.xlsx'))
                 worksheet = workbook.add_worksheet(data_master_mode)
-                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor = mysql.connection.cursor()
                 if mode=="First-Year":
                     cursor.execute('SELECT S_id,image,L_name,F_name, M_name,roll,batch,S_email,KT,Type,S_num,P_email,P_num,current_sem,gender FROM student where current_sem=1 OR current_sem=2 ORDER BY current_sem ASC, roll ASC')
                 elif mode=="Second-Year":
@@ -605,7 +611,7 @@ def upload_excel_export_records():
         elif data_master_mode == "faculty": 
             workbook =xlsxwriter.Workbook(os.path.join(download_directory,dept+'_'+data_master_mode+'_master.xlsx'))
             worksheet = workbook.add_worksheet(data_master_mode)
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             cursor.execute('SELECT dept_name FROM department where dept_short = %s',[dept])
             department = cursor.fetchone()
             dept_full = department['dept_name']
@@ -637,7 +643,7 @@ def upload_excel_export_records():
             if mode != "" :
                 workbook =xlsxwriter.Workbook(os.path.join(download_directory,dept+'_'+data_master_mode+'_'+mode+'_master.xlsx'))
                 worksheet = workbook.add_worksheet(data_master_mode)
-                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor = mysql.connection.cursor()
                 cursor.execute('SELECT subject.course_code,subject.sub_name_long,subject.sub_name_short,subject.sub_type,subject.marks,subject.sem, department.dept_short FROM subject INNER JOIN department ON subject.dept_id = department.dept_id AND subject.sem = %s AND department.dept_short = %s ORDER BY subject.course_code ASC',(mode,session['dept']))
                 field_names = ['Subject Code','Subject Name','Short Subject Name','Semester','Department','Marks (0- no marks, 1- marks)']
                 records = cursor.fetchall()
@@ -667,7 +673,7 @@ def upload_excel_export_records():
             if mode != "" :
                 workbook =xlsxwriter.Workbook(os.path.join(download_directory,dept+'_'+data_master_mode+'_'+mode+'_master.xlsx'))
                 worksheet = workbook.add_worksheet(data_master_mode)
-                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor = mysql.connection.cursor()
                 cursor.execute('SELECT electives_category.cat_name FROM electives_category INNER JOIN department ON electives_category.dept_id = department.dept_id AND electives_category.sem = %s AND department.dept_short = %s ORDER BY electives_category.cat_name ASC',(mode,session['dept']))
                 field_names = ['Category Name']
                 records = cursor.fetchall()
@@ -688,7 +694,7 @@ def upload_excel_export_records():
             if mode != "" :
                 workbook =xlsxwriter.Workbook(os.path.join(download_directory,dept+'_'+data_master_mode+'_'+mode+'_master.xlsx'))
                 worksheet = workbook.add_worksheet(data_master_mode)
-                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor = mysql.connection.cursor()
                 cursor.execute('SELECT electives.course_code,electives.sub_name_long,electives.sub_name_short,electives.sem,electives.sub_type,electives.marks,electives_category.cat_name,department.dept_short FROM electives INNER JOIN department ON electives.dept_id = department.dept_id INNER JOIN electives_category ON electives.elective_category = electives_category.category_id AND department.dept_short = %s AND electives.sem = %s ORDER BY electives.course_code ASC',(session['dept'],mode))
                 field_names = ['Subject Code','Subject Name','Short Subject Name','Semester','Department','Subject Type (1-theory, 0-Practical)','Elective Category','Marks (0- no marks, 1- marks)']
                 records = cursor.fetchall()
@@ -728,7 +734,7 @@ def upload_excel_export_records():
 def student_master_mode():
     mode = request.args.get('mode')
     print(session)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if mode=="First-Year":
         mode_num = 1
         cursor.execute('SELECT S_id, L_name, F_name, M_name, roll, batch, S_email, KT, S_id, S_num, gender FROM student where current_sem=1 OR current_sem=2 ORDER BY roll ASC')
@@ -786,7 +792,7 @@ def insert_student_entry():
     else:
         s_photo_name = ''
     print(s_photo)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("INSERT INTO student (S_id,S_pass,L_name,F_name,M_name,roll,batch,S_email,KT,S_num,P_email,P_num,current_sem,image,gender,dept) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(stud_id,s_pass,lname,fname,mname,roll,batch,email,kts,mob_num,p_email,p_mob_num,sem,s_photo_name,gender,dept))
     msg = {}
     if cursor.rowcount == 1:
@@ -808,7 +814,7 @@ def insert_student_entry():
 def fetch_student_entry():
     stud_id = request.form['stud_id']
     dept = session['dept']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM student WHERE S_id = %s",[stud_id])
     result = cursor.fetchone()
     result['there'] = 1
@@ -839,7 +845,7 @@ def check_student_entry_edit():
     print(check_counter)
     res = {}
     if check_counter['email'] == 1 and check_counter['stud_id'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT S_id FROM student WHERE S_id=%s AND S_email=%s",(s_id,email))
         student = cursor.fetchone()
         cursor.close()
@@ -850,7 +856,7 @@ def check_student_entry_edit():
             res['s_id_present'] = 0
             res['mail_present'] = 0
     elif check_counter['email'] == 1 and check_counter['stud_id'] == 0:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT S_id FROM student WHERE S_email=%s",[email])
         student = cursor.fetchone()
         cursor.close()
@@ -860,7 +866,7 @@ def check_student_entry_edit():
         else:
             res['mail_present'] = 0
     elif check_counter['email'] == 0 and check_counter['stud_id'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT S_id FROM student WHERE S_id=%s",[s_id])
         student = cursor.fetchone()
         cursor.close()
@@ -914,7 +920,7 @@ def update_student_entry():
                 os.remove(os.path.join(directory, f))
             s_photo.save(os.path.join(directory,secure_filename(s_photo_name)))
     print(s_photo_name)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if s_photo_name == '':
         if first_login == 0:
             cursor.execute("UPDATE student SET S_id = %s, S_pass = %s, L_name = %s, F_name = %s, M_name = %s, roll = %s, batch = %s, S_email = %s, KT = %s, S_num = %s, P_email = %s, P_num = %s, current_sem = %s, gender = %s WHERE S_id = %s or S_email = %s",(stud_id,s_pass,lname,fname,mname,roll,batch,email,kts,mob_num,p_email,p_mob_num,sem,gender,stud_id,email))
@@ -946,7 +952,7 @@ def delete_student_entry():
     print(request.form)
     stud_id = request.form['stud_id']
     dept = session['dept']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT image,current_sem FROM student WHERE S_id = %s",[stud_id])
     result = cursor.fetchone()
     print(result)
@@ -971,7 +977,7 @@ def delete_student_entry():
         path = os.path.join(str(myfile), result['image']) 
     else:
         path = str(myfile)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     msg = {}
     if cursor.execute("DELETE FROM student WHERE S_id = %s",[stud_id]):    
         mysql.connection.commit()
@@ -1025,7 +1031,7 @@ def insert_faculty_entry():
     dept= ""
     dept = session['dept']
     f_photo = ''
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT dept_name FROM department where dept_short = %s',[dept])
     department = cursor.fetchone()
     dept = department['dept_name']
@@ -1042,7 +1048,7 @@ def insert_faculty_entry():
     else:
         f_photo_name = ''
     print(f_photo)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     # print(fac_id,desgn,lname,fname,mname,email,mob_num,dept,mob_num,gender,f_photo_name)
     cursor.execute("INSERT INTO faculty (F_id,Designation,L_name,F_name,M_name,F_email,F_password,dept,F_num,gender,img) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (fac_id,desgn,lname,fname,mname,email,f_pass,dept,mob_num,gender,f_photo_name))
     msg = {}
@@ -1065,7 +1071,7 @@ def insert_faculty_entry():
 @login_required
 def fetch_faculty_entry():
     fac_id = request.form['fac_id']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM faculty WHERE F_id = %s",[fac_id])
     result = cursor.fetchone()
     print(cursor.rowcount)
@@ -1098,7 +1104,7 @@ def check_faculty_entry_edit():
     print(check_counter)
     res = {}
     if check_counter['email'] == 1 and check_counter['fac_id'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT F_id FROM faculty WHERE F_id=%s AND F_email=%s",(fac_id,email))
         faculty = cursor.fetchone()
         if faculty:
@@ -1109,7 +1115,7 @@ def check_faculty_entry_edit():
             res['mail_present'] = 0
         cursor.close()
     elif check_counter['email'] == 1 and check_counter['fac_id'] == 0:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT F_id FROM faculty WHERE F_email=%s",[email])
         faculty = cursor.fetchone()
         cursor.close()
@@ -1119,7 +1125,7 @@ def check_faculty_entry_edit():
         else:
             res['mail_present'] = 0
     elif check_counter['email'] == 0 and check_counter['fac_id'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT F_id FROM faculty WHERE F_id=%s",[fac_id])
         faculty = cursor.fetchone()
         cursor.close()
@@ -1168,7 +1174,7 @@ def update_faculty_entry():
                 os.remove(os.path.join(directory, f))
             f_photo.save(os.path.join(directory,secure_filename(f_photo_name)))
     print("f_photo_name:",f_photo_name)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if f_photo_name == '':
         if first_login == 0:
             cursor.execute("UPDATE faculty SET Designation = %s, F_id = %s, F_password = %s, L_name = %s, F_name = %s, M_name = %s, F_email = %s, F_num = %s,gender = %s WHERE F_id = %s or F_email = %s",(desg,fac_id,f_pass,lname,fname,mname,email,mob_num,gender,fac_id,email))
@@ -1201,7 +1207,7 @@ def delete_faculty_entry():
     print(request.form)
     fac_id = request.form['fac_id']
     dept = session['dept']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT img FROM faculty WHERE F_id = %s",[fac_id])
     result = cursor.fetchone()
     print(result)
@@ -1217,7 +1223,7 @@ def delete_faculty_entry():
         path = os.path.join(str(myfile), result['img']) 
     else:
         path = str(myfile)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if cursor.execute("DELETE FROM faculty WHERE F_id = %s",[fac_id]):    
         mysql.connection.commit()
         res['deleted'] = 1
@@ -1250,7 +1256,7 @@ def subject_type_mode():
     sem = request.args.get('sem_mode')
     print(sem)
     print(session)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if sem != "" and sem=='sem1' or sem=='sem2' or sem=='sem3' or sem=='sem4' or sem=='sem5' or sem=='sem6' or sem=='sem7' or sem=='sem8':
         sem_num = int(sem[-1])
         print(sem_num)
@@ -1270,7 +1276,7 @@ def subject_master_mode():
     sem = request.args.get('sem_mode')
     print(sem)
     print(session)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if sem != "" and sem=='sem1' or sem=='sem2' or sem=='sem3' or sem=='sem4' or sem=='sem5' or sem=='sem6' or sem=='sem7' or sem=='sem8':
         sem_num = int(sem[-1])
         print(sem_num)
@@ -1288,7 +1294,7 @@ def subject_master_mode():
 @login_required
 def fetch_subject_entry():
     sub_id = request.form['sub_id']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM subject WHERE course_code = %s",[sub_id])
     result = cursor.fetchone()
     print(cursor.rowcount)
@@ -1316,7 +1322,7 @@ def insert_subject_entry():
     sem = request.form['mode']
     dept= ""
     dept = session['dept']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT dept_id FROM department where dept_short = %s',[session['dept']])
     department = cursor.fetchone()
     dept_id = department['dept_id']
@@ -1352,7 +1358,7 @@ def check_subject_entry_edit():
     print(check_counter)
     res = {}
     if check_counter['sub_id'] == 1 and check_counter['short_name'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT subject.course_code FROM subject INNER JOIN department ON subject.dept_id = department.dept_id WHERE subject.course_code=%s AND department.dept_short=%s AND subject.sub_name_short=%s",(sub_id,session['dept'],short_name))
         subject = cursor.fetchone()
         if subject:
@@ -1363,7 +1369,7 @@ def check_subject_entry_edit():
             res['short_name'] = 0
         cursor.close()
     elif check_counter['sub_id'] == 1 and check_counter['short_name'] == 0:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT subject.course_code FROM subject INNER JOIN department ON subject.dept_id = department.dept_id WHERE subject.course_code=%s AND department.dept_short=%s",(sub_id,session['dept']))
         subject = cursor.fetchone()
         cursor.close()
@@ -1373,7 +1379,7 @@ def check_subject_entry_edit():
         else:
             res['sub_id'] = 0
     elif check_counter['sub_id'] == 0 and check_counter['short_name'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT subject.course_code FROM subject INNER JOIN department ON subject.dept_id = department.dept_id WHERE department.dept_short=%s AND subject.sub_name_short=%s",(session['dept'],short_name))
         faculty = cursor.fetchone()
         cursor.close()
@@ -1399,7 +1405,7 @@ def update_subject_entry():
     sub_type = int(request.form['e_sub_type'])
     marks = int(request.form['e_marks'])
     sem = request.form['e_mode']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("UPDATE subject \
         SET course_code = %s, sub_name_long = %s, sub_name_short = %s, sem = %s, sub_type = %s, marks = %s \
             WHERE course_code = %s or sub_name_short = %s",(sub_code,sub_full_name,sub_short_name,sem,sub_type,marks,sub_code,sub_short_name))
@@ -1425,7 +1431,7 @@ def delete_subject_entry():
     sub_id = request.form['sub_id']
     res = {}
     if sub_id !='':
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         if cursor.execute("DELETE subject FROM subject INNER JOIN department ON department.dept_id = subject.dept_id WHERE department.dept_short=%s AND subject.course_code = %s",(session['dept'],sub_id)):
             mysql.connection.commit()
             cursor.close()
@@ -1451,7 +1457,7 @@ def elective_mode():
     print(sem)
     print(session)
     print("choice",choice)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if sem != "" and sem=='sem1' or sem=='sem2' or sem=='sem3' or sem=='sem4' or sem=='sem5' or sem=='sem6' or sem=='sem7' or sem=='sem8':
         if choice != "" and choice=='subject' or choice=='category':
             sem_num = int(sem[-1])
@@ -1494,7 +1500,7 @@ def elective_subject_master_mode():
     sem = request.args.get('sem_mode')
     print(sem)
     print(session)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if sem != "" and sem=='sem1' or sem=='sem2' or sem=='sem3' or sem=='sem4' or sem=='sem5' or sem=='sem6' or sem=='sem7' or sem=='sem8':
         sem_num = int(sem[-1])
         print(sem_num)
@@ -1525,7 +1531,7 @@ def check_elective_subject_entry_edit():
     print(check_counter)
     res = {}
     if check_counter['sub_id'] == 1 and check_counter['short_name'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT electives.course_code FROM electives INNER JOIN department ON electives.dept_id = department.dept_id WHERE electives.course_code=%s AND department.dept_short=%s AND electives.sub_name_short=%s",(sub_id,session['dept'],short_name))
         subject = cursor.fetchone()
         if subject:
@@ -1536,7 +1542,7 @@ def check_elective_subject_entry_edit():
             res['short_name'] = 0
         cursor.close()
     elif check_counter['sub_id'] == 1 and check_counter['short_name'] == 0:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT electives.course_code FROM electives INNER JOIN department ON electives.dept_id = department.dept_id WHERE electives.course_code=%s AND department.dept_short=%s",(sub_id,session['dept']))
         subject = cursor.fetchone()
         cursor.close()
@@ -1546,7 +1552,7 @@ def check_elective_subject_entry_edit():
         else:
             res['sub_id'] = 0
     elif check_counter['sub_id'] == 0 and check_counter['short_name'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT electives.course_code FROM electives INNER JOIN department ON electives.dept_id = department.dept_id WHERE department.dept_short=%s AND electives.sub_name_short=%s",(session['dept'],short_name))
         faculty = cursor.fetchone()
         cursor.close()
@@ -1565,7 +1571,7 @@ def check_elective_subject_entry_edit():
 @login_required
 def fetch_elective_subject_entry():
     sub_id = request.form['sub_id']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM electives WHERE course_code = %s",[sub_id])
     result = cursor.fetchone()
     print(cursor.rowcount)
@@ -1594,7 +1600,7 @@ def insert_elective_subject_entry():
     sem = request.form['mode']
     dept= ""
     dept = session['dept']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT dept_id FROM department where dept_short = %s',[session['dept']])
     department = cursor.fetchone()
     dept_id = department['dept_id']
@@ -1625,7 +1631,7 @@ def update_elective_subject_entry():
     category = int(request.form['e_category'])
     marks = int(request.form['e_marks'])
     sem = request.form['e_mode']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("UPDATE electives \
         SET course_code = %s, sub_name_long = %s, sub_name_short = %s, sem = %s, sub_type = %s, elective_category = %s, marks = %s \
             WHERE course_code = %s or sub_name_short = %s",(sub_code,sub_full_name,sub_short_name,sem,sub_type,category,marks,sub_code,sub_short_name))
@@ -1651,7 +1657,7 @@ def delete_elective_subject_entry():
     sub_id = request.form['sub_id']
     res = {}
     if sub_id !='':
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         if cursor.execute("DELETE electives FROM electives INNER JOIN department ON department.dept_id = electives.dept_id WHERE department.dept_short=%s AND electives.course_code = %s",(session['dept'],sub_id)):
             mysql.connection.commit()
             cursor.close()
@@ -1672,11 +1678,11 @@ def delete_elective_subject_entry():
 @login_required
 def fetch_electives_category_entry():
     mode = request.form['sem_mode']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT dept_id FROM department where dept_short = %s',[session['dept']])
     department = cursor.fetchone()
     dept_id = department['dept_id']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT category_id, cat_name FROM electives_category WHERE sem = %s AND dept_id = %s",(mode,dept_id))
     categories = cursor.fetchall()
     print(categories)
@@ -1701,7 +1707,7 @@ def fetch_electives_category_entry():
 @login_required
 def fetch_category_entry():
     cat_id = request.form['cat_id']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM electives_category WHERE category_id = %s",[cat_id])
     result = cursor.fetchone()
     print(cursor.rowcount)
@@ -1725,7 +1731,7 @@ def insert_category_entry():
     sem = request.form['mode']
     dept= ""
     dept = session['dept']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT dept_id FROM department where dept_short = %s',[session['dept']])
     department = cursor.fetchone()
     dept_id = department['dept_id']
@@ -1763,7 +1769,7 @@ def check_category_entry_edit():
     print(check_counter)
     res = {}
     if check_counter['sem'] == 1 or check_counter['category_name'] == 1:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT electives_category.category_id FROM electives_category INNER JOIN department ON electives_category.dept_id = department.dept_id WHERE electives_category.cat_name = %s AND electives_category.sem = %s AND department.dept_short=%s",(category_name,sem,session['dept']))
         category = cursor.fetchone()
         if category:
@@ -1787,7 +1793,7 @@ def update_category_entry():
     sem = request.form['e_mode']
     cat_id = request.form['e_cat_id']
     cat_name = request.form['e_cat_name'].title()
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute("UPDATE electives_category\
         SET cat_name = %s, sem = %s  \
             WHERE category_id = %s ",(cat_name,sem,cat_id))
@@ -1813,7 +1819,7 @@ def delete_category_entry():
     cat_id = request.form['cat_id']
     res = {}
     if cat_id !='':
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         if cursor.execute("DELETE electives_category FROM electives_category INNER JOIN department ON department.dept_id = electives_category.dept_id WHERE department.dept_short=%s AND electives_category.category_id = %s",(session['dept'],cat_id)):
             mysql.connection.commit()
             cursor.execute("DELETE electives FROM electives INNER JOIN department ON department.dept_id = electives.dept_id WHERE department.dept_short=%s AND electives.elective_category = %s",(session['dept'],cat_id))

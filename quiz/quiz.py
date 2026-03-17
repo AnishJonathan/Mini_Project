@@ -1,6 +1,6 @@
 from flask import Blueprint, request, render_template, abort, session, redirect, url_for
-from app import mysql
-import MySQLdb.cursors
+from db_mock import MySQL
+mysql = MySQL()
 from datetime import date
 from decimal import Decimal
 import datetime
@@ -20,7 +20,7 @@ IST = pytz.timezone('Asia/Kolkata')
 def quizes_all():
     mode = session['mode']
     svv = session['svv']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     qs = list()
     colors = ['bg-gradient-primary2','bg-gradient-success','bg-gradient-info','bg-gradient-warning','bg-gradient-danger','bg-gradient-dark']
     if mode=="Faculty":
@@ -67,7 +67,7 @@ def check_other_quiz_time():
     e_time =  datetime.datetime.strptime(request.form['e_time'],'%H:%M').time()
     # #print("s_time:",s_time)
     # #print("e_time:",e_time)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if session.get('quiz_id') is None:
         cursor.execute('SELECT q_title,quiz_started,q_time_start,q_time_end,fac_inserted FROM quiz_det WHERE q_date = %s AND q_dept = %s AND q_sem = %s AND q_batch = %s', (date,dept,sem,batch))
     else:
@@ -107,7 +107,7 @@ def check_other_quiz_time():
     if quiz_another_running == 1 or value_present==1:
         print(records[i])
         row = records[i]
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT Designation, F_name, L_name FROM faculty WHERE F_id = %s',[row['fac_inserted']])
         fac_det = cursor.fetchone()
         res['quiz_name'] = row['q_title']
@@ -127,7 +127,7 @@ def get_subjects():
     dept =  request.form['dept']
     print("dept:",dept)
     sem = 'sem'+request.form['sem']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT \
         electives.sub_name_long AS s_name \
         FROM electives \
@@ -186,8 +186,8 @@ def add_quiz_information():
     # #print('sub',sub)
     # #print('quiz_type',quiz_type)
     # preview_quiz_questiont(q_date)
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    result = cur.execute("INSERT INTO quiz_det (q_title,q_dept,q_sem,q_sub,q_batch,q_date,q_time_start,q_time_end,show_answer,fac_inserted,q_timer,q_time_division,quiz_type,switch_limit) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(title,dept,sem,sub,batch,date,s_time,e_time,view_score,fac_inserted,ques_timer,q_time_divide,quiz_type,switch_limit))
+    cur = mysql.connection.cursor()
+    result = cur.execute("INSERT INTO quiz_det (q_title,q_dept,q_sem,q_sub,q_batch,q_date,q_time_start,q_time_end,show_answer,fac_inserted,q_timer,q_time_division,quiz_type,switch_limit,desc_time) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(title,dept,sem,sub,batch,date,s_time,e_time,view_score,fac_inserted,ques_timer,q_time_divide,quiz_type,switch_limit,0))
     session.pop("quiz_id",None)
     session.pop("ques_no",None)
     session['quiz_id'] = str(cur.lastrowid)
@@ -249,7 +249,7 @@ def add_questions():
          
     else:
         ques_time = ''
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     if ans_type=='mcq':
         ans_type = 0
         ttloptions = int(request.form['ttloptions'])
@@ -293,7 +293,7 @@ def add_questions():
 @login_required
 def quiz_cancel():
     if not session.get("quiz_id") is None:
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         result = cur.execute("DELETE FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])    
         mysql.connection.commit()
         session.pop("quiz_id",None)
@@ -304,7 +304,7 @@ def quiz_cancel():
 @login_required
 def quiz_completion():
     if session.get("quiz_id") is not None:
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         result = result = cur.execute("UPDATE quiz_det SET quiz_status = 1 WHERE quiz_id = %s" ,[session['quiz_id']])
         mysql.connection.commit()
         session.pop("quiz_id",None)
@@ -317,10 +317,10 @@ def quiz_cancel_quest():
     if session.get("quiz_id") is not None and session.get("ques_no") is not None:
         # #print("exists")
         # #print("Quiz ID:"+session['quiz_id'])
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("DELETE FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])    
         mysql.connection.commit()
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("DELETE FROM questions WHERE quiz_id = %s",[session['quiz_id']])    
         mysql.connection.commit()
         session.pop("quiz_id",None)
@@ -343,7 +343,7 @@ def quiz_get():
     session['quiz_id'] = qt
     mode = session['mode']    
     if mode=="Faculty":
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT COUNT(q_no) AS total_question FROM questions WHERE quiz_id = %s",[qt])
         record = cur.fetchone()
         # #print(record)
@@ -383,7 +383,7 @@ def quiz_preview():
     if session.get("quiz_id") is not None:
         # # #print("exists")
         # #print("Quiz ID:"+session['quiz_id'])
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])
         quiz = cur.fetchone()
         quiz_start_time = quiz['q_time_start']+':00'
@@ -416,7 +416,7 @@ def quiz_preview():
         sem = 'sem'+quiz['q_sem']
         # #print(dept)
         # #print(sem)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT \
             electives.sub_name_long AS s_name \
             FROM electives \
@@ -447,7 +447,7 @@ def quiz_preview_question():
     if session.get("ques_no") is not None and session.get("ques_no")!=1:
         # # #print("exists")
         # #print("Quiz ID:"+session['quiz_id'])
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         if session['ques_timer']==1 and session['q_time_division']=='eq':
             cur.execute("SELECT q_time_start,q_time_end FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])
             result = cur.fetchone()
@@ -479,7 +479,7 @@ def quiz_preview_question():
         cur.close()
         return render_template('preview_quiz_ques.html',msg = "",ques=questions,len = len(questions),ques_no=1)
     else:
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT q_timer,q_time_division FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])
         records = cur.fetchone()
         session['ques_timer'] = records['q_timer']
@@ -502,7 +502,7 @@ def edit_question():
     q_id =  request.form.get('question_no'+qt)
     # #print(request.form.get('question_no'+qt))
     # # #print("got this shit:"+q_id)
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM questions WHERE q_id = %s AND quiz_id = %s",(q_id,session['quiz_id']))
     question = cur.fetchone()
     if question:
@@ -526,7 +526,7 @@ def update_questions():
     ques = request.form['ques'+q_no]
     pts = request.form['ed_points']
     ans_type = request.form['ed_answ_type']
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     q_index = request.form['ques_index']
 
     if ans_type=='mcq':
@@ -622,8 +622,8 @@ def quiz_update_details():
     session['ques_timer'] = ques_timer
 
     q_index = request.form['quiz_index']
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    result = cur.execute("UPDATE quiz_det SET q_title = %s ,q_dept = %s ,q_sem = %s ,q_sub = %s ,q_batch = %s ,q_date = %s ,q_time_start = %s ,q_time_end = %s ,show_answer= %s,q_timer=%s,q_time_division=%s,quiz_type=%s,quiz_started=%s WHERE quiz_id = %s" ,(title,dept,sem,sub,batch,date,s_time,e_time,view_score,ques_timer,q_time_divide,quiz_type,0,q_index))
+    cur = mysql.connection.cursor()
+    result = cur.execute("UPDATE quiz_det SET q_title = %s ,q_dept = %s ,q_sem = %s ,q_sub = %s ,q_batch = %s ,q_date = %s ,q_time_start = %s ,q_time_end = %s ,show_answer= %s,q_timer=%s,q_time_division=%s,quiz_type=%s,quiz_started=%s,switch_limit=%s,desc_time=%s WHERE quiz_id = %s" ,(title,dept,sem,sub,batch,date,s_time,e_time,view_score,ques_timer,q_time_divide,quiz_type,0,switch_limit,desc_time,q_index))
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('quiz.quiz_preview_question'))
@@ -633,7 +633,7 @@ def quiz_update_details():
 def question_delete():
     # #print(session)
     q_index = request.form['index']
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM questions WHERE q_id = %s",[q_index])
     mysql.connection.commit()
     session['ques_no'] = int(session['ques_no'])-1
@@ -646,20 +646,20 @@ def quiz_delete():
     q_index = request.form['index']
     # #print("exists")
     #print("Quiz ID:"+session['quiz_id'])
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM quiz_responses WHERE quiz_id = %s",[session['quiz_id']])    
     mysql.connection.commit()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM score WHERE quiz_id = %s",[session['quiz_id']])    
     mysql.connection.commit()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM quiz_det WHERE quiz_id = %s",[session['quiz_id']])    
     mysql.connection.commit()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM questions WHERE quiz_id = %s",[session['quiz_id']])    
     mysql.connection.commit()
     
-    # cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    # cur = mysql.connection.cursor()
     # cur.execute("DELETE t1, t2, t3, t4 FROM \
     #       score as t1 \
     #       INNER JOIN  quiz_responses as t2 on t1.quiz_id = t2.quiz_id \
@@ -699,7 +699,7 @@ def add_one(v):
 @login_required
 def response():
     if session.get('quiz_id') is not None:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(user) AS user_attempt FROM score WHERE quiz_id =%s AND quiz_attempted=1', [session['quiz_id']])
         records = cursor.fetchone()
         # #print(records)
@@ -708,7 +708,7 @@ def response():
             cursor.execute('SELECT user_score,total_points FROM score WHERE quiz_id =%s AND quiz_attempted=1', [session['quiz_id']])
             rd = cursor.fetchall()
             cursor.close()
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
             total_pts = cursor.fetchone()
             total_points = total_pts['total_points']
@@ -753,12 +753,12 @@ def response():
             percent_send['pass'] = test_list[1]
             percent_send['fail'] = test_list[2]
             print(percent_send)
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             cursor.execute('SELECT q_date,q_time_start,q_sub,q_title,q_sem,q_dept,q_batch,quiz_start FROM quiz_det,quiz_responses WHERE quiz_det.quiz_id = %s', [session['quiz_id']])
             r_quiz = cursor.fetchone()
             cursor.close()
             print(r_quiz)
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             if r_quiz is not None and r_quiz['q_batch']=="All":
                 cursor.execute('SELECT COUNT(S_id) AS total_stud FROM student WHERE current_sem =%s AND dept= %s', (r_quiz['q_sem'],r_quiz['q_dept']))
             else:
@@ -768,7 +768,7 @@ def response():
             # quiz_responses = {'total_stud': 72}
             # print(quiz_responses)
             cursor.close()
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             cursor.execute('SELECT username,roll,stud_img,user_score,total_points,total_time_taken FROM score WHERE quiz_id =%s ORDER BY cast(user_score as unsigned) DESC,total_time_taken ASC LIMIT 5', [session['quiz_id']])
             records = cursor.fetchall()
             cursor.close()
@@ -805,7 +805,7 @@ def response():
             cursor.execute('SELECT q_sub,q_title,q_sem,q_dept,q_batch FROM quiz_det WHERE quiz_id =%s', [session['quiz_id']])
             r_quiz = cursor.fetchone()
             cursor.close()
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             if r_quiz['q_batch']=="All":
                 cursor.execute('SELECT COUNT(S_id) AS total_stud FROM student WHERE current_sem =%s AND dept= %s', (r_quiz['q_sem'],r_quiz['q_dept']))
             else:
@@ -827,7 +827,7 @@ def mark_response():
     print(label)
     if label=='Avg. % Students Passed Distinction' or label=='Avg. % Students Passed' or label=='Avg. % Students Failed':
         print(session)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT q_sub,q_title,q_sem,q_dept,q_batch FROM quiz_det WHERE quiz_id =%s', [session['quiz_id']])
         r_quiz = cursor.fetchone()
         cursor.execute('SELECT dept_id FROM department WHERE dept_short = %s', [session['dept']])
@@ -845,7 +845,7 @@ def mark_response():
         semester = r_quiz['q_sem']
         subject = r_quiz['q_sub']
         dept = r_quiz['q_dept']
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
         total_pts = cursor.fetchone()
         total_points = total_pts['total_points']
@@ -895,7 +895,7 @@ def mark_response():
 def graph_response():
     label = request.args.get('label')
     if label=='Quiz Attempted in %:' :
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT q_date,q_time_end,q_time_start,q_sub,q_title,q_sem,q_dept,q_batch,show_answer,quiz_started FROM quiz_det WHERE quiz_id =%s', [session['quiz_id']])
         r_quiz = cursor.fetchone()
         # #print("quiz_det",r_quiz)
@@ -938,7 +938,7 @@ def graph_response():
         cursor.close()
         # print(students_attempt)
         # #print("pending_chk:",pending_chk)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
         total_pts = cursor.fetchone()
         total_pts['total_points'] = int(total_pts['total_points'])
@@ -976,7 +976,7 @@ def graph_response():
         return render_template('response_graph.html',label="Student's Submitted Quiz",quiz_name=r_quiz['q_title'],quiz_sub=r_quiz['q_sub'],toppers=students_attempt,tplen= len(students_attempt),notattempt=0,check=pending_chk,total_points=total_pts['total_points'],show_answer=r_quiz['show_answer'],quiz_started=r_quiz['quiz_started'],permission_to_stop=perm_stop,enable_release_score=release_score)
     elif label=='Quiz Not Attempted in %:':
         print(session)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT q_sub,q_title,q_sem,q_dept,q_batch,quiz_type,q_sem FROM quiz_det WHERE quiz_id =%s', [session['quiz_id']])
         r_quiz = cursor.fetchone()
         # print("r_quiz",r_quiz)
@@ -996,7 +996,7 @@ def graph_response():
             semester = r_quiz['q_sem']
             subject = r_quiz['q_sub']
             dept = r_quiz['q_dept']
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             if r_quiz['q_batch'] == 'All':
                 cursor.execute('SELECT F_name, L_name, roll, electives FROM student WHERE current_sem = %s AND student.dept = %s AND S_id NOT IN (SELECT user FROM score WHERE quiz_id = %s) ORDER BY roll ASC', (semester,dept,session['quiz_id']))
             else:
@@ -1020,7 +1020,7 @@ def graph_response():
                         not_attempted.pop(i)
                 total_students_participants = tuple(not_attempted)
         else:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             if r_quiz['q_batch'] == 'All':
                 cursor.execute('SELECT F_name, L_name, roll FROM student WHERE current_sem = %s AND student.dept = %s AND S_id NOT IN (SELECT user FROM score WHERE quiz_id = %s) ORDER BY roll ASC', (r_quiz['q_sem'],r_quiz['q_dept'],session['quiz_id']))
             else:
@@ -1040,7 +1040,7 @@ def start_stop_quiz_status():
     print("session['quiz_id']",session['quiz_id'])
     if start_stop == 0 or start_stop == 1:
         # start - 1 , stop- 0
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE quiz_det SET quiz_started = %s WHERE quiz_id = %s AND fac_inserted=%s" ,(start_stop,session['quiz_id'],session['svv']))    
         cur.execute("SELECT * from quiz_responses")
         if (start_stop == 0):
@@ -1063,14 +1063,14 @@ def start_stop_quiz_status():
 def quiz_end_scores(user):
     # #
     print("user",user)
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT selected_opt,ques_id,ques_type,quiz_start,time_per_ques,q_time_start FROM quiz_responses,quiz_det WHERE quiz_responses.quiz_id = %s AND quiz_responses.quiz_id = quiz_det.quiz_id AND user_inserted=%s",[session['quiz_id'],user])
     record_user = cur.fetchone()
     cur.execute("Select F_name , L_name, roll, image from student where S_id = %s",[user])
     user_details = cur.fetchone()
     print("user_details",user_details)
     cur.close()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT ans_type FROM questions WHERE quiz_id = %s",[session['quiz_id']])
     question_ans_type = cur.fetchall()
     print("question_ans_type",question_ans_type)
@@ -1086,7 +1086,7 @@ def quiz_end_scores(user):
         time_per_ques = []
         now = datetime.datetime.now(IST)
         quiz_end_time = now.strftime('%H:%M:%S')
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         # cur.execute("SELECT selected_opt,ques_id,ques_type,quiz_start,time_per_ques FROM quiz_responses WHERE quiz_id = %s AND user_inserted=%s",(session['quiz_id'],session['svv']))
         # record_user = cur.fetchone()
         # user_quiz_start = record_user['q_time_start']+':00'
@@ -1127,11 +1127,11 @@ def quiz_end_scores(user):
         pass 
     
     #
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT correct_opt,q_id,points FROM questions WHERE quiz_id = %s AND correct_opt !='-' OR correct_opt != NULL",[session['quiz_id']])
     record_og = cur.fetchall()
     cur.close()
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
     total_pts = cursor.fetchone()
     total_pts['total_points'] = int(total_pts['total_points'])
@@ -1209,11 +1209,11 @@ def quiz_end_scores(user):
             username = user_details["F_name"] + " " + user_details["L_name"]
             roll = user_details["roll"]
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("INSERT INTO score (time_submitted,user,user_score,ques_points,total_points,quiz_id,quiz_attempted,pending_chk,total_time_taken,stud_img,username,roll) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(quiz_end_time,user,count,score_list,total_pts['total_points'],session['quiz_id'],1,pending,ttl_time_taken,user_img,username,roll))
         mysql.connection.commit()
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE quiz_responses SET time_per_ques = %s WHERE quiz_id = %s AND user_inserted=%s" ,(diff_time_str,session['quiz_id'],user))
         mysql.connection.commit()
 
@@ -1237,11 +1237,11 @@ def quiz_end_scores(user):
             roll = session['roll']
 
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("INSERT INTO score (time_submitted,user,user_score,ques_points,total_points,quiz_id,quiz_attempted,pending_chk,total_time_taken,stud_img,username,roll) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(quiz_end_time,session['svv'],count,score_list,total_pts['total_points'],session['quiz_id'],1,pending,ttl_time_taken,user_img,username,roll))
         mysql.connection.commit()
         diff_time_str = "00:00:00"
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE quiz_responses SET time_per_ques = %s WHERE quiz_id = %s AND user_inserted=%s" ,(diff_time_str,session['quiz_id'],user))
         mysql.connection.commit()
         if pending==0:
@@ -1261,7 +1261,7 @@ def score_release():
         quiz_id = str(request.form['send_value'])
         # #print(quiz_id)
         # #print(type(quiz_id))
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE quiz_det SET show_answer = %s WHERE quiz_id = %s AND fac_inserted=%s" ,(1,quiz_id,session['svv']))    
         mysql.connection.commit()
         cur.close()
@@ -1278,7 +1278,7 @@ def score_release():
 def mark_answer():
     stud_id = request.form['send_value']
     # # #print(stud_id)
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT user,user_score,ques_points,pending_chk,total_points FROM score WHERE user = %s AND quiz_id = %s",(stud_id,session['quiz_id']))
     student = cur.fetchone()
     cur.close()
@@ -1296,14 +1296,14 @@ def mark_answer():
     total_score['score'] = int(math.ceil(score))
     total_score['total_points'] = student['total_points']
     # #print("Total Points:",total_score['total_points'])
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT F_name,L_name,roll FROM student WHERE S_id = %s",[student['user']])
     stud_info = cur.fetchone()
     cur.close()
     # #print(session)
     if student is not None:
         # # #print("exists")
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM questions WHERE quiz_id = %s",[session['quiz_id']])
         records = cur.fetchall()
         questions = list()
@@ -1313,7 +1313,7 @@ def mark_answer():
             if row['ans_type']==1:
                 question_index.append(str(row['q_id']))
         # #print(questions[0]['q_id'])
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("SELECT selected_opt,ques_id,ques_type,one_line_ans,desc_ans_name,time_per_ques FROM quiz_responses WHERE quiz_id = %s AND user_inserted=%s",(session['quiz_id'],stud_id))
         quiz_response = cur.fetchone()
         # # #print(type(quiz_response))
@@ -1400,7 +1400,7 @@ def mark_answer():
             #print(op)
             op.append(op1)
         #print(op)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT SUM(points) AS total_points FROM questions WHERE quiz_id =%s', [session['quiz_id']])
         total_pts = cursor.fetchone()
         total_pts['total_points'] = int(total_pts['total_points'])
@@ -1413,7 +1413,7 @@ def mark_answer():
 def update_marks_student():
     stud_id = request.form['stud_id']
     # #print("STudent ID:",stud_id)
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT q_id,ans_type FROM questions WHERE quiz_id = %s",[session['quiz_id']])
     total_ques_one_line = cur.fetchall()
     cur.close()
@@ -1424,11 +1424,11 @@ def update_marks_student():
             marks.append(request.form['ans'+str(i+1)])
             ques_index.append(str(total_ques_one_line[i]['q_id']))
     # #print("Marks got :",marks)
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT ques_id FROM quiz_responses WHERE quiz_id = %s AND user_inserted =%s ",(session['quiz_id'],stud_id))
     question_shuffle = cur.fetchone()
     cur.close()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("SELECT ques_points FROM score WHERE quiz_id = %s AND user =%s AND quiz_attempted=1 AND (pending_chk=1 OR pending_chk=0)",(session['quiz_id'],stud_id))
     user_ques_points = cur.fetchone()
     cur.close()
@@ -1466,7 +1466,7 @@ def update_marks_student():
         # #print(str_usr_points)
         str_usr_points = ','.join(str_usr_points)
         # #print(str_usr_points)
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cur = mysql.connection.cursor()
         cur.execute("UPDATE score SET ques_points = %s , user_score = %s , pending_chk  = 0 WHERE quiz_id = %s AND user=%s" ,(str_usr_points,total_points,session['quiz_id'],stud_id))    
         mysql.connection.commit()
         session['message'] = 'Successfully Marked!'
@@ -1484,10 +1484,10 @@ def response_delete():
     q_index = request.form['index']
     # #print("exists")
     #print("Quiz ID:"+session['quiz_id'])
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM quiz_responses WHERE quiz_id = %s",[session['quiz_id']])    
     mysql.connection.commit()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("DELETE FROM score WHERE quiz_id = %s",[session['quiz_id']])    
     mysql.connection.commit()
     session.pop("quiz_id",None)

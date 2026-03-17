@@ -43,7 +43,7 @@ CREATE TABLE `admin` (
 
 LOCK TABLES `admin` WRITE;
 /*!40000 ALTER TABLE `admin` DISABLE KEYS */;
-INSERT INTO `admin` VALUES (1,'MISTRY','RAKESH','BHAVYA','admin@somaiya.edu','12345678','Information Technology','9999999999','M','');
+INSERT INTO `admin` VALUES (1,'','RAKESH','Anish','admin@testwise.edu','12345678','Information Technology','9999999999','M','');
 /*!40000 ALTER TABLE `admin` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -85,6 +85,7 @@ DROP TABLE IF EXISTS `faculty`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `faculty` (
   `F_id` int NOT NULL,
+  `Designation` varchar(10) CHARACTER SET latin1 COLLATE latin1_swedish_ci DEFAULT NULL,
   `L_name` text NOT NULL,
   `F_name` text NOT NULL,
   `M_name` text NOT NULL,
@@ -104,7 +105,7 @@ CREATE TABLE `faculty` (
 
 LOCK TABLES `faculty` WRITE;
 /*!40000 ALTER TABLE `faculty` DISABLE KEYS */;
-INSERT INTO `faculty` VALUES (220081,'Shah','Nasim','Banu','nshah@somaiya.edu','32145678','Information Technology','9821154828','F','https://www.kjsieit.in/sims/images/facdp/1609156302Nasim-Photo.jpg'),(222222,'Kotecha','Radhika','Nikhil','radhika.kotecha@somaiya.edu','32145678','Information Technology','7698558637','F','https://www.kjsieit.in/sims/images/facdp/1596654541radhika.jpg');
+INSERT INTO `faculty` VALUES (220081,'Prof.','Shah','Dakshith','Banu','dakshith@testwise.edu','32145678','Information Technology','9821154828','F','https://www.kjsieit.in/sims/images/facdp/1609156302Nasim-Photo.jpg'),(222222,'Prof.','Kotecha','Radhika','Nikhil','radhika.kotecha@somaiya.edu','32145678','Information Technology','7698558637','F','https://www.kjsieit.in/sims/images/facdp/1596654541radhika.jpg');
 /*!40000 ALTER TABLE `faculty` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -288,7 +289,7 @@ CREATE TABLE `student` (
 
 LOCK TABLES `student` WRITE;
 /*!40000 ALTER TABLE `student` DISABLE KEYS */;
-INSERT INTO `student` VALUES ('2220180163','12345678','DESAI','KRISH','TUSHAR',10,1,'krish.desai@somaiya.edu',0,0,'9619746376','','',5,'','M','IT','',''),('2220180274','12345678','PAREKH','HET','NILESH',43,1,'het.parekh@somaiya.edu',0,0,'9619746376','','',5,'','M','IT','',''),('2220190037','9819160674','CHAPLOT','TEJAS','RAJENDRA',5,1,'tejas.chaplot@somaiya.edu',0,NULL,'7506438666','rajendra123@gmail.com','9819160674',5,'anti_ragging.png','M','IT',NULL,NULL),('2220190371','12345678','MISTRY','BHAVYA','RAKESH',33,2,'bhavya.mistry@somaiya.edu',0,0,'9987263368','rakesh.mistry1974@gmail.com','9820331552',5,'https://www.kjsieit.in/sims/images/studentdp/1596348948BHAVYA%20MISTRY%20PHOTO.jpg','M','IT','',''),('2220190372','12345678','PATEL','YASH','NILESH',45,2,'patel.yn@somaiya.edu',0,0,'9987263368','','',5,'','M','IT','','');
+INSERT INTO `student` VALUES ('2220180163','12345678','DESAI','SHASHANK','TUSHAR',10,1,'shashank@testwise.edu',0,0,'9619746376','','',5,'','M','IT','',''),('2220180274','12345678','PAREKH','HET','NILESH',43,1,'het.parekh@somaiya.edu',0,0,'9619746376','','',5,'','M','IT','',''),('2220190037','9819160674','CHAPLOT','TEJAS','RAJENDRA',5,1,'tejas.chaplot@somaiya.edu',0,NULL,'7506438666','rajendra123@gmail.com','9819160674',5,'anti_ragging.png','M','IT',NULL,NULL),('2220190371','12345678','MISTRY','BHAVYA','RAKESH',33,2,'bhavya.mistry@somaiya.edu',0,0,'9987263368','rakesh.mistry1974@gmail.com','9820331552',5,'https://www.kjsieit.in/sims/images/studentdp/1596348948BHAVYA%20MISTRY%20PHOTO.jpg','M','IT','',''),('2220190372','12345678','PATEL','YASH','NILESH',45,2,'patel.yn@somaiya.edu',0,0,'9987263368','','',5,'','M','IT','','');
 /*!40000 ALTER TABLE `student` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -335,3 +336,11 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2022-01-12 19:41:48
+
+LOCK TABLES `electives` WRITE;
+INSERT INTO `electives` VALUES ('1UILC8041','PROJECT MANAGEMENT','PM','sem8',1,18,1,'ST2202'),('1UILC8042','FINANCE MANAGEMENT','FM','sem8',1,18,1,'ST2202'),('1UITDLC6052','IOT DATA ANALYTICS','IOT-DA','sem6',1,21,1,'ST2202'),('1UITDLC6053','IMAGE PROCESSING','IP','sem6',1,21,1,'ST2202'),('1UITDLC8021','NATURAL LANGUAGE PROCESSING','NLP','sem8',1,1,1,'ST2202'),('1UITDLC8022','CLOUD SECURITY','CS','sem8',1,1,1,'ST2202'),('1UITDLC8031','EXPLAINABLE AI & RESPONSIBLE AI','EXAI','sem8',1,3,1,'ST2202'),('1UITDLC8033','AUGMENTED REALITY - VIRTUAL REALITY','ARVR','sem8',1,3,1,'ST2202');
+UNLOCK TABLES;
+
+LOCK TABLES `electives_category` WRITE;
+INSERT INTO `electives_category` VALUES (21,'Department level elective','sem6','ST2202'),(1,'Departmental 1','sem8','ST2202'),(3,'Departmental 2','sem8','ST2202'),(14,'Instituitional','sem7','ST2202'),(18,'Instituitional','sem8','ST2202');
+UNLOCK TABLES;

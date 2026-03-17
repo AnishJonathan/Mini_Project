@@ -3,9 +3,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from flask import Flask, request, render_template, redirect, url_for, session, jsonify
 import json
-from flask_mysqldb import MySQL
+from db_mock import MySQL
 from check_login import hash_password, check_password, check_message
-import MySQLdb.cursors
 # from flask_oauthlib.client import OAuth
 from pathlib import Path
 import gc
@@ -151,7 +150,7 @@ def auth_decode(url,pwd,otp):
     email = session["reset_email"]
     role = session["reset_role"]
     print(email,role,'email and role for the otp')
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if url=="login.html":
         if role == "student":
             cursor.execute("SELECT otp,expiry_at,otp_used from student where S_email = %s",[email])
@@ -239,7 +238,7 @@ def generateOTP():
 
 def send_verification_mail(email,pwd,role,called_from):
     role = role.lower()
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     flag = 0
     if role == "student":
         cursor.execute("Select * from student Where S_email = %s",[email])
@@ -310,34 +309,39 @@ def login():
     # #print(session)
     name1 = request.form['username']
     pwd = request.form['pass']
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT * FROM faculty WHERE F_email = %s', [name1])
     account = cursor.fetchone()
     if account:
         if check_password(pwd, account['F_password']):
-            if account['first_login'] == 0:
-                return send_verification_mail(name1,pwd,"faculty","Login")
+            if account.get('first_login', 1) == 0:
+                return render_template('first_login_password.html',account_id=account['F_id'])
             else:
                 msg = 'Logged in successfully !'
-                session['username'] = account['Designation'].upper()+" "+account['F_name'] +" "+ account['L_name']
+                designation = account.get('Designation', '')
+                prefix = designation.upper() + " " if designation else ""
+                session['username'] = prefix + account['F_name'] +" "+ account['L_name']
                 session['svv'] = account['F_id']
                 session['gender'] = account['gender']
                 session['login'] = 1
                 session['mode'] = "Faculty"
                 session['login_mode'] = "SVV"
-                cursor.execute('SELECT dept_short FROM department where dept_name = %s',[account['dept']])
+                cursor.execute('SELECT dept_short FROM department where dept_name = %s OR dept_short = %s',[account['dept'], account['dept']])
                 department = cursor.fetchone()
                 cursor.close()
-                dept_short = department['dept_short']
+                if department and department.get('dept_short'):
+                    dept_short = department['dept_short']
+                else:
+                    dept_short = account['dept']
                 session['dept'] = dept_short
                 img_found = 0
                 if account['img'] != '':
-                    img_file = os.path.join(app_root,"static/profile_pics/faculty_images/",dept_short,account['F_id'],account['img'])
+                    img_file = os.path.join(app_root,"static/profile_pics/faculty_images/",dept_short,str(account['F_id']),account['img'])
                     # print(img_file)
                     print(os.path.exists(img_file))
                     if os.path.exists(img_file):
                         img_found = 1
-                        session['img'] = os.path.join("/static/profile_pics/faculty_images/",dept_short,account['F_id'],account['img'])
+                        session['img'] = os.path.join("/static/profile_pics/faculty_images/",dept_short,str(account['F_id']),account['img'])
                 if img_found == 0:
                     if account['gender']=='F':
                         session['img'] = "/static/images/woman.png"
@@ -349,16 +353,16 @@ def login():
         else:
             session["flash_msg"] = 'Incorrect Credentials !'
     else:        
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT * FROM student WHERE S_email = %s', [name1])
         student = cursor.fetchone()
         print("Student")
         print()
         if student :
-            print("student['first_login']",student['first_login'])
+            print("student['first_login']",student.get('first_login', 1))
             if check_password(pwd, student['S_pass']):
-                if student['first_login'] == 0:
-                    return send_verification_mail(name1,pwd,"student","Login")
+                if student.get('first_login', 1) == 0:
+                    return render_template('first_login_password.html',account_id=student['S_id'])
                 else:
                     msg = 'Logged in successfully !'
                     cursor.close()            
@@ -401,7 +405,7 @@ def login():
             else:
                 session["flash_msg"] = "Incorrect Credentials!"
         else:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor = mysql.connection.cursor()
             cursor.execute('SELECT * FROM admin WHERE A_email = %s', [name1])
             admin = cursor.fetchone()
 
@@ -460,7 +464,7 @@ def resetpassword():
 
 def verify_email(email):
     # #print(email)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute('SELECT * FROM faculty WHERE F_email= %s', [email])
     account = cursor.fetchone()
     cursor.close()
@@ -481,7 +485,7 @@ def verify_email(email):
         # redirect(url_for('dashboard'))
         return "1"
     else:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT * FROM student WHERE S_email= %s', [email])
         student = cursor.fetchone()
         if student:
@@ -527,7 +531,7 @@ def dashboard():
     mode = session['mode']
     svv = session['svv']
     dt = datetime.datetime.today().strftime('%Y-%m-%d')
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     qs = list()
     if mode=="Faculty":
         # cursor.execute('SELECT quiz_id,q_title,q_sub,q_date,q_time_start,q_time_end FROM quiz_det WHERE fac_inserted =%s AND q_date >= %s ORDER BY quiz_id DESC', (svv,dt))
@@ -541,11 +545,11 @@ def dashboard():
         cursor.execute('SELECT COUNT(S_id) as Total_Stud FROM student')
         students = cursor.fetchone()
         qs.append(students)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(F_id) as Total_Fac FROM faculty')
         faculty = cursor.fetchone()
         qs.append(faculty)
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor = mysql.connection.cursor()
         cursor.execute('SELECT COUNT(*) as Total_Sub FROM subject')
         subject = cursor.fetchone()
         qs.append(subject)
@@ -618,7 +622,7 @@ def dashboard():
         print("------------------------------")
         print("chartData," ,(chartData['user_scores']))
 
-        cursor.execute('SELECT quiz_type,quiz_id,q_title,q_sub,q_date,q_time_start,q_time_end,quiz_started FROM quiz_det WHERE q_date >= %s AND q_dept = %s AND q_sem = %s AND q_batch="All" OR  q_batch=%s ORDER BY quiz_id DESC', (dt,dept,sem,batch))
+        cursor.execute('SELECT quiz_type,quiz_id,q_title,q_sub,q_date,q_time_start,q_time_end,quiz_started FROM quiz_det WHERE q_date >= %s AND q_dept = %s AND q_sem = %s AND (q_batch="All" OR q_batch=%s) ORDER BY quiz_id DESC', (dt,dept,sem,batch))
         records = cursor.fetchall()
         cursor.close()
         # #print(len(records))
@@ -648,17 +652,20 @@ def dashboard():
                 if row['quiz_type']=='0':
                     subject = row['q_sub']
                     print(subject)
-                    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-                    cursor.execute('SELECT subject.course_code,subject.sub_name_long,subject.is_elective FROM subject INNER JOIN department ON department.dept_id = subject.dept_id AND subject.sem = %s AND subject.sub_name_long = %s AND department.dept_short = %s', (sem,subject,session['dept']))
+                    cursor = mysql.connection.cursor()
+                    sem_with_prefix = 'sem'+str(session['sem'])
+                    cursor.execute('SELECT subject.course_code,subject.sub_name_long,subject.is_elective FROM subject INNER JOIN department ON department.dept_id = subject.dept_id AND subject.sem = %s AND subject.sub_name_long = %s AND department.dept_short = %s', (sem_with_prefix,subject,session['dept']))
                     elective_sub = cursor.fetchone()
                     if cursor.rowcount == 0:
-                        cursor.execute('SELECT electives.course_code,electives.sub_name_long FROM electives INNER JOIN department ON department.dept_id = electives.dept_id AND electives.sem = %s AND electives.sub_name_long = %s AND department.dept_short = %s', (sem,subject,session['dept']))
+                        cursor.execute('SELECT electives.course_code,electives.sub_name_long FROM electives INNER JOIN department ON department.dept_id = electives.dept_id AND electives.sem = %s AND electives.sub_name_long = %s AND department.dept_short = %s', (sem_with_prefix,subject,session['dept']))
                         elective_sub = cursor.fetchone()
-                        if cursor.rowcount > 0:
+                        if elective_sub:
                             elective_sub['is_elective'] = 1
+                    
+                    if elective_sub is None:
+                        elective_sub = {'is_elective': 0}
                 else:
-                    elective_sub = {}
-                    elective_sub['is_elective'] = 0
+                    elective_sub = {'is_elective': 0}
                     subject = 'Non-Subjective'
                 # #print(elective_sub)
                 subject_check = 0
@@ -735,13 +742,13 @@ def show_profile():
     f_info = {'Name':'','num':'','dept':'','gender':'','img':''}
     a_info = {'Name':'','num':'','dept':'','gender':'','img':''}
     info = {}
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     if mode=="Faculty":
-        cursor.execute('SELECT * FROM faculty WHERE F_id = % s', [svv])
+        cursor.execute('SELECT * FROM faculty WHERE F_id = %s', [svv])
     elif mode=="Student":
-        cursor.execute('SELECT * FROM student WHERE S_id = % s', [svv])
+        cursor.execute('SELECT * FROM student WHERE S_id = %s', [svv])
     elif mode=="Admin":
-        cursor.execute('SELECT * FROM admin WHERE A_id = % s', [svv])
+        cursor.execute('SELECT * FROM admin WHERE A_id = %s', [svv])
 
     account = cursor.fetchone()
     if account:
@@ -782,23 +789,33 @@ def show_profile():
     if mode=="Student":
         print(session)
         sem = 'sem'+str(session['sem'])
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("SELECT electives_category.category_id,electives_category.cat_name FROM electives_category \
-            INNER JOIN department ON electives_category.dept_id = department.dept_id \
-                AND department.dept_short = %s AND electives_category.sem = %s",(session['dept'],sem))
-        elective_categories = cursor.fetchall()
-        print(elective_categories)
-        cursor.execute("SELECT electives.sub_name_long,electives.course_code,electives.elective_category FROM electives \
-            INNER JOIN department ON electives.dept_id = department.dept_id \
-                AND department.dept_short = %s AND electives.sem = %s",(session['dept'],sem))
-        elective_subjects = cursor.fetchall()
-        print(elective_subjects)
-        cursor.execute("SELECT electives FROM student WHERE S_id = %s AND dept = %s",(session['svv'],session['dept']))
-        selected_electives = cursor.fetchone()
-        print(selected_electives)
-        if selected_electives['electives'] is not None:
-            sel_elect = selected_electives['electives'].split(",")
-        else:
+        cursor = mysql.connection.cursor()
+        try:
+            cursor.execute("SELECT electives_category.category_id,electives_category.cat_name FROM electives_category \
+                INNER JOIN department ON electives_category.dept_id = department.dept_id \
+                    AND department.dept_short = %s AND electives_category.sem = %s",(session['dept'],sem))
+            elective_categories = cursor.fetchall()
+            print(elective_categories)
+            cursor.execute("SELECT electives.sub_name_long,electives.course_code,electives.elective_category FROM electives \
+                INNER JOIN department ON electives.dept_id = department.dept_id \
+                    AND department.dept_short = %s AND electives.sem = %s",(session['dept'],sem))
+            elective_subjects = cursor.fetchall()
+            print(elective_subjects)
+        except Exception as e:
+            print("Electives error:", e)
+            elective_categories = []
+            elective_subjects = []
+        try:
+            cursor.execute("SELECT electives FROM student WHERE S_id = %s AND dept = %s",(session['svv'],session['dept']))
+            selected_electives = cursor.fetchone()
+            print(selected_electives)
+            if selected_electives and selected_electives.get('electives') is not None:
+                sel_elect = selected_electives['electives'].split(",")
+            else:
+                sel_elect = []
+        except Exception as e:
+            print("Electives column error:", e)
+            selected_electives = None
             sel_elect = []
         print(sel_elect)
         elective_cat = dict()
@@ -888,7 +905,7 @@ def profile_photo_change():
     image.save(os.path.join(directory,secure_filename(image_name)))
     session['img'] = os.path.join("/",dir_url,image_name)
     # print("session['img']",session['img'])
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor()
     cursor.execute(query, values)
     mysql.connection.commit()
     ajax_response = {}
@@ -915,18 +932,18 @@ def logout():
 
 ################################## Login ##########################################
 
-if __name__ == "__main__":
-    import logging
-    # logging.basicConfig(filename='./error.log',level=logging.DEBUG)
-    # print(USKS)
-    app.run(threaded=True)
-
-from sample import sample
+# from sample import sample
 from quiz.quiz import quiz
 from student.student import student
-app.register_blueprint(sample,url_prefix="/sample")
+# app.register_blueprint(sample,url_prefix="/sample")
 app.register_blueprint(quiz,url_prefix="/quiz")
 app.register_blueprint(student,url_prefix="/student")
 
 from admin import admin
 app.register_blueprint(admin.admin,url_prefix="/admin")
+
+if __name__ == "__main__":
+    import logging
+    # logging.basicConfig(filename='./error.log',level=logging.DEBUG)
+    # print(USKS)
+    app.run(threaded=True)
