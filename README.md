@@ -85,12 +85,4 @@ Now, you should be able to access the project locally at [http://localhost:3000/
 ![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)
 ![GoDaddy](https://img.shields.io/badge/GoDaddy-1BDBDB.svg?style=for-the-badge&logo=GoDaddy&logoColor=white)
 
-## Live Demonstration
-
-[![Demo](https://github.com/bhavyamistry/Testwise-OnlineExamPortal-with-AntiCheating/assets/58860047/683796cb-d14a-4795-a31a-71950d0d6ca0)](https://examportal.kjsieit.in/)
-
-## Video Demonstration
-
-https://user-images.githubusercontent.com/58860047/167340083-74c2b911-1c71-4be9-9e0c-6b805421d6eb.mp4
-
 
