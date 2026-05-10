@@ -80,7 +80,7 @@ Now, you should be able to access the project locally at [http://localhost:3000/
 ![jQuery](https://img.shields.io/badge/jquery-%230769AD.svg?style=for-the-badge&logo=jquery&logoColor=white)
 ![JSON Web Token](https://img.shields.io/badge/JSON%20Web%20Tokens-000000.svg?style=for-the-badge&logo=JSON-Web-Tokens&logoColor=white)
 ![Google Login](https://img.shields.io/badge/Google%20Authenticator-4285F4.svg?style=for-the-badge&logo=Google-Authenticator&logoColor=white)
-![MySQL](https://img.shields.io/badge/mysql-4479A1.svg?style=for-the-badge&logo=mysql&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
 ![Microsoft Excel](https://img.shields.io/badge/Microsoft_Excel-217346?style=for-the-badge&logo=microsoft-excel&logoColor=white)
 ![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)
 ![GoDaddy](https://img.shields.io/badge/GoDaddy-1BDBDB.svg?style=for-the-badge&logo=GoDaddy&logoColor=white)
