@@ -90,8 +90,7 @@ def load():
 
 @app.route('/login/')
 def show_login():
-
-    # #print(session)
+    print("DEBUG: Inside show_login endpoint")
     try:
         assert session["flash_msg"]
     except (KeyError,AssertionError):
@@ -116,6 +115,7 @@ def show_login():
     else:
         msg = session["flash_msg"]
         session["flash_msg"] = ""
+        print("DEBUG: Right before rendering login.html")
         return render_template("login.html",message=msg)
 
 @app.route('/google_signin/', methods=['POST', 'GET'])
@@ -622,7 +622,7 @@ def dashboard():
         print("------------------------------")
         print("chartData," ,(chartData['user_scores']))
 
-        cursor.execute('SELECT quiz_type,quiz_id,q_title,q_sub,q_date,q_time_start,q_time_end,quiz_started FROM quiz_det WHERE q_date >= %s AND q_dept = %s AND q_sem = %s AND (q_batch="All" OR q_batch=%s) ORDER BY quiz_id DESC', (dt,dept,sem,batch))
+        cursor.execute('SELECT quiz_type,quiz_id,q_title,q_sub,q_date,q_time_start,q_time_end,quiz_started FROM quiz_det WHERE q_date >= %s AND q_dept = %s AND (q_batch="All" OR q_batch=%s) ORDER BY quiz_id DESC', (dt,dept,batch))
         records = cursor.fetchall()
         cursor.close()
         # #print(len(records))
@@ -689,12 +689,9 @@ def dashboard():
                     # #print("No need to check elective")
                     subject_check = 1
                 # #print('subject_check:',subject_check)
-                # db_date = datetime.date(row['q_date'], '%Y-%m-%d')
-                if dt1 < db_date and subject_check==1:
+                print(f"Quiz ID: {row['quiz_id']}, Type: {row['quiz_type']}, Subject Check: {subject_check}")
+                if subject_check==1:
                     # # #print("Appended1")
-                    qs.append(row)
-                elif (subject_check==1 and dt == db_date.strftime("%Y-%m-%d")) and  ((t_time<=st or t_time<end) or row['quiz_started']==1):
-                    # # #print("Appended2")
                     qs.append(row)
 
     

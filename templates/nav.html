@@ -1,12 +1,14 @@
-<nav class="navbar default-layout-navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
-            <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center" style="border-right: 1px solid #F8F8F8;">
-                <a class="navbar-brand brand-logo" href="{{url_for('dashboard')}}" style="font-weight: bold; font-size: 1.5rem; color: #333;">Testwise</a>
-                <a class="navbar-brand brand-logo-mini" href="{{url_for('dashboard')}}" style="font-weight: bold; font-size: 1.2rem; color: #333;">Testwise</a>
+<nav class="navbar default-layout-navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row" style="background-color: #F4EEFF !important; border-bottom: 1px solid #E6D9F9;">
+          <button class="navbar-toggler navbar-toggler align-self-center position-absolute d-none d-lg-block" type="button" data-toggle="minimize" style="z-index: 3; left: 20px; border: none; background: transparent; cursor: pointer; height: 100%;">
+            <span class="mdi mdi-menu" style="font-size: 1.8rem; color: #8E2DE2;"></span>
+          </button>
+          <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center" style="left: 0; top: 0; pointer-events: none; z-index: 1;">
+                <a href="{{url_for('dashboard')}}" style="font-weight: 800; font-size: 1.8rem; color: #8E2DE2; text-decoration: none; pointer-events: auto; letter-spacing: 1px;">Testwise</a>
+          </div>
+            <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center" style="background-color: transparent; border-right: 1px solid #E6D9F9;">
+                <!-- Logo moved to center -->
             </div>
             <div class="navbar-menu-wrapper d-flex align-items-stretch">
-                <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
-            <span class="mdi mdi-menu"></span>
-          </button>
                 <!-- <div class="search-field d-none d-md-block">
                     <form class="d-flex align-items-center h-100" action="#">
                         <div class="input-group">

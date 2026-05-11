@@ -63,7 +63,7 @@ class CursorMock:
 class ConnectionMock:
     def __init__(self):
         # Using check_same_thread=False since Flask can share connections across threads in dev
-        self.conn = sqlite3.connect('examportal.db', check_same_thread=False)
+        self.conn = sqlite3.connect('safe.db', check_same_thread=False)
         self.conn.row_factory = self.dict_factory
         
     def dict_factory(self, cursor, row):

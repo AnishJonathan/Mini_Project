@@ -49,75 +49,162 @@
         }
     });
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        #barChart{
-            padding: 4px;
-            margin-bottom: 50px;
-            border-radius: 5px;
-            background-image: url("{{ url_for('static', filename='images/dashboard/circle.svg')}}");
-            background-size: cover;
-            padding: 30px;
-
+        body {
+            font-family: 'Outfit', sans-serif !important;
+            background-image: url('/static/images/abstract_hero.png') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+        }
+        /* Make layout wrappers transparent */
+        .container-scroller, .page-body-wrapper, .main-panel, .content-wrapper {
+            background: transparent !important;
         }
 
-        .barChartWrap{
-            /* width: 700px;
-            height: 350px; */
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-
-            width: auto;
+        /* Glassmorphism Styles */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px !important;
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2) !important;
+            transition: all 0.3s ease !important;
             position: relative;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-        .barChartWrapArea {
-            width: 800px;
-            height: 350px;
-        }
-
-        #spiralChart{
-            margin-left: 40px;
-            height: 350px!important;
-            width: 400px!important;
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-            border-radius: 5px;
-            padding: 30px;
-            background-image: url("{{ url_for('static', filename='images/dashboard/circle.svg')}}");
+            overflow: hidden;
         }
         
-        .spiralChartWrap{
+        .glass-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2) !important;
+            background: rgba(255, 255, 255, 0.35) !important;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .page-title {
+            color: #000 !important;
+            font-weight: 800;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .breadcrumb-item.active {
+            color: #555 !important;
+        }
+
+        .breadcrumb-item i {
+            color: #333 !important;
+        }
+
+        .page-title-icon {
+            background: rgba(142, 45, 226, 0.15) !important;
+            color: #8E2DE2 !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .page-title-icon i {
+            color: #8E2DE2 !important;
+        }
+
+        /* Chart Wrappers Redesign */
+        #barChart, #spiralChart {
+            background: none !important;
+            padding: 20px;
+        }
+        
+        .barChartWrap, .spiralChartWrap {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .barChartWrap {
+            width: 400px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            margin-right: 50px;
+        }
+        .barChartWrapArea {
             width: 400px;
             height: 350px;
         }
 
+        .spiralChartWrap {
+            width: 400px;
+            height: 350px;
+        }
+
+        /* Quiz Typography */
+        .glass-card h3 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #222;
+        }
+        .glass-card h2 {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #444;
+            margin-bottom: 20px;
+        }
+        .glass-card h4 {
+            font-weight: 400;
+            font-size: 0.95rem;
+            color: #555;
+            background: rgba(0,0,0,0.05);
+            padding: 8px 12px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
         @media (max-width:768px){
-            #spiralChart{
-                width: 85vw!important;
-                margin:auto;
+            .spiralChartWrap {
+                width: 85vw !important;
+                margin: auto;
                 margin-top: 30px;
                 margin-bottom: 30px;
             } 
-            .barChartWrap{
-                width: 85vw!important;
+            .barChartWrap {
+                width: 85vw !important;
                 margin: auto;
             }
-            .stretch-card{
-                margin-top: 50px;
-                width: 85vw!important;
+            .stretch-card {
+                margin-top: 30px;
+                width: 85vw !important;
                 padding: 0px;
             }
-            .stretch-row{
-                margin-left: 0px!important;
-                margin-right: 0px!important;
-                width: 100vw!important;
+            .stretch-row {
+                margin-left: 0px !important;
+                margin-right: 0px !important;
+                width: 100vw !important;
             }
+            .row { margin-left: 0; margin-right: 0; }
         }
-
-
     </style>
 </head>
 
-<body>
+<body class="sidebar-icon-only">
     {% include "loader.html" ignore missing %}
     <div class="container-scroller">
         <!-- partial:partials/_navbar.html -->
@@ -129,18 +216,14 @@
             {% include "side_nav.html" ignore missing %}
             <!-- partial -->
             <div class="main-panel">
-                <div class="content-wrapper" style="background: #d8e3e7;">
+                <div class="content-wrapper">
                     <div class="page-header">
                         <h3 class="page-title">
                             <span class="page-title-icon bg-gradient-primary2 text-white mr-2">
                   <i class="mdi mdi-home"></i>
                 </span> Dashboard </h3>
                         <nav aria-label="breadcrumb">
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item active" aria-current="page">
-                                    <span></span>Overview <i class="mdi mdi-alert-circle-outline icon-sm text-primary2 align-middle"></i>
-                                </li>
-                            </ul>
+                            <!-- Breadcrumb removed -->
                         </nav>
                     </div>
                     {% if chartData %}
@@ -175,7 +258,7 @@
                                 {% set count = (loop.index-1)-(index*6) %}
                             {% endif %}
                         <div class="col-md-4 stretch-card grid-margin">
-                            <div class="card {{color[count]}} card-img-holder text-white">
+                            <div class="card glass-card card-img-holder text-white">
                                 {% if mode == 'Admin' %}
                                     {% if loop.index==1 %}
                                     <a class="card-block stretched-link text-decoration-none" href="/admin/master_data?mode=Student"></a>
@@ -227,7 +310,7 @@
                         {% endfor %}
                         {% else %}
                         <div class="col-md-12 stretch-card grid-margin">
-                            <div class="card card-img-holder text-white">
+                            <div class="card glass-card card-img-holder text-white">
                                 <div class="card-body" style="color: black;">
                                     <h4>No Quizes Till Now!</h4>
                                 </div>
@@ -261,7 +344,7 @@
                 </div>
                 <!-- content-wrapper ends -->
                 <!-- partial:partials/_footer.html -->
-                <footer class="footer" style="background: #d8e3e7;">
+                <footer class="footer" style="padding: 0px !important; min-height: 0px !important; height: 0px !important; background: transparent !important; border: none;">
                     <!-- <div class="d-sm-flex justify-content-center justify-content-sm-between">
                         <span class="text-muted text-center text-sm-left d-block d-sm-inline-block">Copyright © 2020. All rights reserved.</span>
                         <span class="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">Hand-crafted & made with <i class="mdi mdi-heart text-danger"></i></span>

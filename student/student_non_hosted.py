@@ -69,12 +69,12 @@ def student_quiz():
             return render_template('attempt_quiz.html',message="",q_details=quiz_det,date=dt)
         elif dt1 > db_date or (dt1 == db_date and  (t_time>=end) and quiz_det['quiz_started']==0) or rec:
             print("IF2")
-            return redirect(url_for('student.score_quiz'))
+            return render_template('attempt_quiz.html',message="",q_details=quiz_det,date=dt)
         elif dt1 == db_date and t_time>st and quiz_det['quiz_started']==0:
         # if dt1 < db_date or (dt1 == db_date and t_time<st):
             # return render_template('attempt_quiz.html',message="",q_details="",date="",points="")
             print("IF3")
-            return render_template('attempt_quiz.html',message="Quiz not started yet!",q_details="",date="")
+            return render_template('attempt_quiz.html',message="",q_details=quiz_det,date=dt)
         elif dt1 == db_date and quiz_det['quiz_started']==1:
         # elif dt1 == db_date and  (t_time>=st and t_time<end):
             print("IF4")
@@ -301,7 +301,7 @@ def student_quiz():
                 return redirect(url_for('student.score_quiz'))
         elif dt1 > db_date or (dt1 == db_date and  (t_time>=end)):
             print("IF5")
-            return redirect(url_for('student.score_quiz'))
+            return render_template('attempt_quiz.html',message="",q_details=quiz_det,date=dt)
         else:
             print("IF6")
             return render_template('attempt_quiz.html',message="Quiz Not Found",q_details="",date="",max_limit="")

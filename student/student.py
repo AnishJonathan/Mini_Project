@@ -56,16 +56,10 @@ def student_quiz():
         cur = mysql.connection.cursor()
         cur.execute("SELECT quiz_attempted FROM score WHERE quiz_id = %s AND user=%s",(session['quiz_id'],session['svv']))
         rec = cur.fetchone()
-        if dt1 < db_date or (dt1 == db_date and t_time<st and quiz_det['quiz_started']==0) and not rec:
-            print("IF1")
-            return render_template('attempt_quiz.html',message="",q_details=quiz_det,date=dt)
-        elif dt1 > db_date or (dt1 == db_date and  (t_time>=end) and quiz_det['quiz_started']==0) or rec:
+        if rec:
             print("IF2")
             return redirect(url_for('student.score_quiz'))
-        elif dt1 == db_date and t_time>st and quiz_det['quiz_started']==0:
-            print("IF3")
-            return render_template('attempt_quiz.html',message="Quiz not started yet!",q_details="",date="")
-        elif dt1 == db_date and quiz_det['quiz_started']==1:
+        else:
             print("IF4")
             print(session)
             cur = mysql.connection.cursor()
@@ -296,9 +290,8 @@ def student_quiz():
                 else:
                     return render_template('attempt_quiz.html',message="Sorry Quiz is Already Filled!",q_details="",date="",max_limit = session['max_limit'])
             else:
-                return redirect(url_for('student.score_quiz'))
-        else:
-            return render_template('attempt_quiz.html',message="Quiz Not Found",q_details="",date="",max_limit="")
+                return render_template('attempt_quiz.html',message="",q_details=quiz_det,date=dt)
+
     else:
         return render_template('attempt_quiz.html',message="Quiz Not Saved By Faculty!",q_details="",date="",max_limit="")
 
@@ -983,8 +976,7 @@ def finish_quiz():
     # #
     ttl_time_taken = str(datetime.datetime.strptime(quiz_end_time, '%H:%M:%S') - datetime.datetime.strptime(user_quiz_start, '%H:%M:%S'))
     ttl_time_taken = datetime.datetime.strptime(ttl_time_taken, '%H:%M:%S')
-    # #
-    ttl_time_taken = ttl_time_taken.time()
+    ttl_time_taken = str(ttl_time_taken.time())
     pending = 0
     for row in question_ans_type:
         if row['ans_type']==1:
